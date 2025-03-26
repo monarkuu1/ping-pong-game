@@ -1,0 +1,137 @@
+import pygame
+import random
+
+# Initialize Pygame
+pygame.init()
+
+# Screen dimensions
+WIDTH, HEIGHT = 800, 600
+WIN = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Ping Pong")
+
+# Colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+
+# Paddle settings
+PADDLE_WIDTH, PADDLE_HEIGHT = 20, 100
+PADDLE_VEL = 5
+
+# Ball settings
+BALL_RADIUS = 7
+BALL_VEL = 5
+
+# Fonts
+SCORE_FONT = pygame.font.SysFont("comicsans", 50)
+WINNER_FONT = pygame.font.SysFont("comicsans", 100)
+
+# Player paddles and ball
+player1 = pygame.Rect(10, HEIGHT//2 - PADDLE_HEIGHT//2, PADDLE_WIDTH, PADDLE_HEIGHT)
+player2 = pygame.Rect(WIDTH - 10 - PADDLE_WIDTH, HEIGHT//2 - PADDLE_HEIGHT//2, PADDLE_WIDTH, PADDLE_HEIGHT)
+ball = pygame.Rect(WIDTH//2 - BALL_RADIUS, HEIGHT//2 - BALL_RADIUS, BALL_RADIUS * 2, BALL_RADIUS * 2)
+
+# Ball velocity
+ball_vel_x = BALL_VEL * random.choice((1, -1))
+ball_vel_y = BALL_VEL * random.choice((1, -1))
+
+# Scores
+score1 = 0
+score2 = 0
+POINT_LIMIT = 11
+
+def draw():
+    WIN.fill(BLACK)
+    pygame.draw.rect(WIN, WHITE, player1)
+    pygame.draw.rect(WIN, WHITE, player2)
+    pygame.draw.ellipse(WIN, WHITE, ball)
+    pygame.draw.aaline(WIN, WHITE, (WIDTH // 2, 0), (WIDTH // 2, HEIGHT))
+
+    # Draw scores
+    score_text1 = SCORE_FONT.render(f"Team 1: {score1}", 1, WHITE)
+    score_text2 = SCORE_FONT.render(f"Team 2: {score2}", 1, WHITE)
+    WIN.blit(score_text1, (WIDTH // 4 - score_text1.get_width() // 2, 20))
+    WIN.blit(score_text2, (WIDTH * 3 // 4 - score_text2.get_width() // 2, 20))
+
+    pygame.display.update()
+
+def handle_collision():
+    global ball_vel_x, ball_vel_y, score1, score2
+
+    if ball.top <= 0 or ball.bottom >= HEIGHT:
+        ball_vel_y *= -1
+
+    if ball.colliderect(player1):
+        if ball_vel_x < 0:
+            ball_vel_x *= -1
+
+    if ball.colliderect(player2):
+        if ball_vel_x > 0:
+            ball_vel_x *= -1
+
+    if ball.left <= 0:
+        score2 += 1
+        reset_ball()
+
+    if ball.right >= WIDTH:
+        score1 += 1
+        reset_ball()
+
+def reset_ball():
+    global ball_vel_x, ball_vel_y
+    ball.center = (WIDTH // 2, HEIGHT // 2)
+    ball_vel_x *= random.choice((1, -1))
+    ball_vel_y *= random.choice((1, -1))
+
+def move_paddles(keys):
+    if keys[pygame.K_w] and player1.top > 0:
+        player1.y -= PADDLE_VEL
+    if keys[pygame.K_s] and player1.bottom < HEIGHT:
+        player1.y += PADDLE_VEL
+    if keys[pygame.K_UP] and player2.top > 0:
+        player2.y -= PADDLE_VEL
+    if keys[pygame.K_DOWN] and player2.bottom < HEIGHT:
+        player2.y += PADDLE_VEL
+
+def draw_winner(text):
+    draw_text = WINNER_FONT.render(text, 1, WHITE)
+    WIN.blit(draw_text, (WIDTH//2 - draw_text.get_width()//2, HEIGHT//2 - draw_text.get_height()//2))
+    pygame.display.update()
+    pygame.time.delay(3000)
+
+def main():
+    global ball_vel_x, ball_vel_y, score1, score2
+
+    clock = pygame.time.Clock()
+    run = True
+
+    while run:
+        clock.tick(60)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
+
+        keys = pygame.key.get_pressed()
+        move_paddles(keys)
+
+        ball.x += ball_vel_x
+        ball.y += ball_vel_y
+
+        handle_collision()
+        draw()
+
+        if score1 >= POINT_LIMIT:
+            draw_winner("Team 1 Wins!")
+            score1 = 0
+            score2 = 0
+            reset_ball()
+
+        if score2 >= POINT_LIMIT:
+            draw_winner("Team 2 Wins!")
+            score1 = 0
+            score2 = 0
+            reset_ball()
+
+    pygame.quit()
+
+if __name__ == "__main__":
+    main()
